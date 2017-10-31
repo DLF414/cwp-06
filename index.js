@@ -4,6 +4,7 @@ const port = 3000;
 const extras = require('./extras');
 const articles = require("./controller/articles");
 const comments = require("./controller/comments");
+const logs = require("./controller/logs");
 
 const handlers = {
     '/api/articles/readall' : articles.readAll,
@@ -12,24 +13,25 @@ const handlers = {
     '/api/articles/update' : articles.update,
     '/api/articles/delete' : articles.delete,
     '/api/comments/create' : comments.create,
-    '/api/comments/delete' : comments.delete
+    '/api/comments/delete' : comments.delete,
+    '/api/logs'          : logs.send
 };
 
 const server = http.createServer((req, res) => {
     parseBodyJson(req, (err, payload) => {
-    const handler = getHandler(req.url);
-    handler(req, res, payload, (err, result) => {
-        if (err) {
-            res.statusCode = err.code;
+        const handler = getHandler(req.url);
+        handler(req, res, payload, (err, result) => {
+            if (err) {
+                res.statusCode = err.code;
+                res.setHeader('Content-Type', 'application/json');
+                res.end( JSON.stringify(err) );
+                return;
+            }
+            res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');
-            res.end( JSON.stringify(err) );
-            return;
-        }
-        res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end( JSON.stringify(result) );
-});
-});
+            res.end( JSON.stringify(result) );
+        });
+    });
 });
 
 server.listen(port, hostname, () => {
@@ -52,7 +54,6 @@ function parseBodyJson(req, cb) {
     }).on('end', function() {
         body = Buffer.concat(body).toString();
         extras.logRequest(req.url, body,new Date().toISOString());
-        console.log("body : " + body);
         if(body !== "")
         {
             params = JSON.parse(body);
